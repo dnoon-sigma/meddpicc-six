@@ -9,7 +9,7 @@ import { excerpt, loadRecaps } from "@/lib/recaps";
 import { Empty } from "@/components/DataTable";
 import { SurpriseButton } from "@/components/SurpriseButton";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export default async function Home() {
   const [l, recaps] = await Promise.all([loadLeague(), loadRecaps()]);
