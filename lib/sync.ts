@@ -2,6 +2,7 @@ import { espnFetch } from "./espn";
 import { SEASON, serviceClient } from "./supabase";
 
 const POSITIONS: Record<number, string> = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
+const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 const BENCH = 20;
 const IR = 21;
 
@@ -18,9 +19,18 @@ export async function currentWeek(): Promise<number> {
   return data.scoringPeriodId;
 }
 
+/** NFL team ids (same ids ESPN fantasy uses as proTeamId) that are on bye in a given week. */
+async function teamsOnBye(week: number): Promise<Set<number>> {
+  const res = await fetch(`${SCOREBOARD}?week=${week}&seasontype=2&dates=${SEASON}`, { cache: "no-store" });
+  if (!res.ok) return new Set();
+  const data = await res.json();
+  return new Set((data.teamsOnBye ?? []).map((t: any) => Number(t.id)));
+}
+
 /** Pull one week's matchups and full lineups from ESPN and upsert them. Safe to re-run. */
 export async function syncWeek(week: number) {
   const data = await espnFetch(["mTeam", "mBoxscore", "mMatchupScore"], { scoringPeriodId: week });
+  const byes = await teamsOnBye(week);
 
   const owners = new Map<string, string>(
     (data.members ?? []).map((m: any) => [m.id, m.displayName]),
@@ -55,6 +65,11 @@ export async function syncWeek(week: number) {
         const projected = (p.stats ?? []).find(
           (s: any) => s.statSourceId === 1 && s.statSplitTypeId === 1 && s.scoringPeriodId === week,
         );
+        // A player who played has a non-empty actual stat line for the week; a bye/inactive player does not.
+        const actual = (p.stats ?? []).find(
+          (s: any) => s.statSourceId === 0 && s.statSplitTypeId === 1 && s.scoringPeriodId === week,
+        );
+        const played = !!actual && Object.keys(actual.stats ?? {}).length > 0;
         entries.push({
           season: SEASON,
           week,
@@ -64,6 +79,8 @@ export async function syncWeek(week: number) {
           is_starter: e.lineupSlotId !== BENCH && e.lineupSlotId !== IR,
           points: e.playerPoolEntry.appliedStatTotal ?? 0,
           projected: projected?.appliedTotal ?? null,
+          played,
+          on_bye: byes.has(p.proTeamId),
           updated_at: new Date().toISOString(),
         });
       }
@@ -114,7 +131,6 @@ export async function runSync(mode: "backfill" | "current") {
   }
 }
 
-const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
 async function nflGameLive(): Promise<boolean> {
   const res = await fetch(SCOREBOARD, { cache: "no-store" });

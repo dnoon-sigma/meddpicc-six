@@ -204,3 +204,45 @@ export function weekAwards(l: League, week: number): Award[] {
   }
   return awards;
 }
+
+export type Inmate = {
+  teamId: number;
+  players: { name: string; position: string; reason: "BYE" | "OUT" }[];
+  priors: number; // times the team was in jail in earlier weeks this season
+};
+
+/**
+ * Teams that started someone who didn't play in a completed week.
+ * Skill players (QB/RB/WR/TE) count when they recorded no stats; K and D/ST only count on a bye,
+ * since a kicker can legitimately have an empty stat line.
+ */
+export function jail(l: League): { week: number | null; inmates: Inmate[]; totalPriors: number } {
+  const finalWeeks = [...new Set(l.matchups.filter((m) => m.final).map((m) => m.week))].sort((a, b) => a - b);
+  const week = finalWeeks[finalWeeks.length - 1] ?? null;
+  if (week === null) return { week, inmates: [], totalPriors: 0 };
+
+  const offenders = (w: number) => {
+    const byTeam = new Map<number, Inmate["players"]>();
+    for (const e of l.entries) {
+      if (e.week !== w || !e.is_starter || e.played === null) continue;
+      const p = l.players.get(e.player_id);
+      const pos = p?.position ?? "";
+      const skill = ["QB", "RB", "WR", "TE"].includes(pos);
+      const nope = skill ? !e.played : !!e.on_bye;
+      if (!nope) continue;
+      byTeam.set(e.team_id, [
+        ...(byTeam.get(e.team_id) ?? []),
+        { name: p?.name ?? "Unknown", position: pos, reason: e.on_bye ? "BYE" : "OUT" },
+      ]);
+    }
+    return byTeam;
+  };
+
+  const priors = new Map<number, number>();
+  for (const w of finalWeeks.filter((x) => x < week)) {
+    for (const id of offenders(w).keys()) priors.set(id, (priors.get(id) ?? 0) + 1);
+  }
+  const inmates = [...offenders(week)].map(([teamId, players]) => ({ teamId, players, priors: priors.get(teamId) ?? 0 }));
+  inmates.sort((a, b) => b.players.length - a.players.length || b.priors - a.priors);
+  return { week, inmates, totalPriors: [...priors.values()].reduce((a, b) => a + b, 0) };
+}

@@ -4,6 +4,7 @@ import { computeTeamStats, weekAwards } from "@/lib/stats";
 import { REPORTS } from "@/lib/reports";
 import { SectionTitle, Title } from "@/components/ui";
 import { StandingsList } from "@/components/StandingsList";
+import { Jail } from "@/components/Jail";
 import { Empty } from "@/components/DataTable";
 import { SurpriseButton } from "@/components/SurpriseButton";
 
@@ -47,6 +48,8 @@ export default async function Home() {
           );
         })}
       </div>
+
+      <Jail l={l} />
 
       <SectionTitle hint="sort it however you like · tap a team for its profile">📊 Standings</SectionTitle>
       <StandingsList

@@ -18,6 +18,8 @@ export type Entry = {
   is_starter: boolean;
   points: number;
   projected: number | null;
+  played: boolean | null;
+  on_bye: boolean | null;
 };
 export type Player = { id: number; name: string; position: string | null };
 
@@ -52,7 +54,7 @@ export async function loadLeague(): Promise<League> {
   const [teams, matchups, entries, players] = await Promise.all([
     fetchAll<Team>("teams", "id,name,owner,abbrev"),
     fetchAll<Matchup>("matchups", "week,home_team,away_team,home_score,away_score,winner,final"),
-    fetchAll<Entry>("lineup_entries", "week,team_id,player_id,slot_id,is_starter,points,projected"),
+    fetchAll<Entry>("lineup_entries", "week,team_id,player_id,slot_id,is_starter,points,projected,played,on_bye"),
     fetchAll<Player>("players", "id,name,position", false),
   ]);
   const { data: run } = await publicClient()
