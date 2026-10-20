@@ -24,7 +24,7 @@ async function teamsOnBye(week: number): Promise<Set<number>> {
   const res = await fetch(`${SCOREBOARD}?week=${week}&seasontype=2&dates=${SEASON}`, { cache: "no-store" });
   if (!res.ok) return new Set();
   const data = await res.json();
-  return new Set((data.teamsOnBye ?? []).map((t: any) => Number(t.id)));
+  return new Set((data.week?.teamsOnBye ?? []).map((t: any) => Number(t.id)));
 }
 
 /** Pull one week's matchups and full lineups from ESPN and upsert them. Safe to re-run. */
