@@ -17,7 +17,7 @@ export function Nav() {
     <header className="sticky top-0 z-20 border-b border-line bg-ink/85 backdrop-blur">
       <nav className="mx-auto flex max-w-4xl items-center gap-1 overflow-x-auto px-4 py-2.5 no-scrollbar">
         <Link href="/" className="mr-3 shrink-0 font-display text-base tracking-wide">
-          🏈 <span className="bg-gradient-to-r from-lime to-cyan bg-clip-text text-transparent">THE LEAGUE</span>
+          🏈 <span className="bg-gradient-to-r from-lime to-cyan bg-clip-text text-transparent">MEDDPICC 6</span>
         </Link>
         {NAV.map((n) => (
           <Link

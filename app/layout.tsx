@@ -5,7 +5,7 @@ import { Nav } from "@/components/Nav";
 const bungee = Bungee({ weight: "400", subsets: ["latin"], variable: "--font-bungee" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-export const metadata = { title: "The League", description: "Stats, awards and curiosities from our fantasy league." };
+export const metadata = { title: "MEDDPICC 6", description: "Stats, awards and curiosities from the MEDDPICC 6 fantasy league." };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

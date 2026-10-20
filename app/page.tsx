@@ -20,7 +20,7 @@ export default async function Home() {
 
   return (
     <main>
-      <Title sub={`Through week ${throughWeek} · tap anything to dig in`}>The League</Title>
+      <Title sub={`Through week ${throughWeek} · tap anything to dig in`}>MEDDPICC 6</Title>
       <div className="mb-2 flex flex-wrap gap-3">
         <SurpriseButton hrefs={surprise} />
         <Link href="/live" className="rounded-full border border-line px-5 py-2.5 font-display text-sm tracking-wide hover:border-cyan">
