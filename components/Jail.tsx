@@ -25,8 +25,7 @@ export function Jail({ l }: { l: League }) {
                 <div className="flex items-center gap-3">
                   <Avatar id={m.teamId} name={teamName(l, m.teamId)} size={36} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold leading-tight">{l.teams.get(m.teamId)?.owner ?? teamName(l, m.teamId)}</div>
-                    <div className="truncate text-xs text-slate-500">{teamName(l, m.teamId)}</div>
+                    <div className="truncate font-semibold leading-tight">{teamName(l, m.teamId)}</div>
                   </div>
                   <span className="text-xl">⛓️</span>
                 </div>
