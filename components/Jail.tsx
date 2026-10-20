@@ -3,14 +3,14 @@ import { League, teamName } from "@/lib/league";
 import { jail } from "@/lib/stats";
 import { Avatar, SectionTitle } from "./ui";
 
-const REASON = { BYE: "😴 on a BYE", OUT: "🚑 didn't play" } as const;
+const REASON = { BYE: "😴 on a BYE", OUT: "🚑 didn't play", EMPTY: "🕳️ left empty" } as const;
 
 export function Jail({ l }: { l: League }) {
   const { week, inmates } = jail(l);
   if (week === null) return null;
   return (
     <>
-      <SectionTitle hint={`week ${week} · started a player who didn't play`}>🚔 Fantasy jail</SectionTitle>
+      <SectionTitle hint={`week ${week} · left a slot empty or started someone who didn't play`}>🚔 Fantasy jail</SectionTitle>
       <div className="relative overflow-hidden rounded-2xl border border-slate-500/40 bg-[repeating-linear-gradient(90deg,rgba(148,163,184,0.10)_0_6px,transparent_6px_44px)] bg-gradient-to-b from-slate-800/60 to-slate-900/80 p-4">
         {inmates.length === 0 ? (
           <div className="py-6 text-center">
@@ -31,8 +31,8 @@ export function Jail({ l }: { l: League }) {
                   <span className="text-xl">⛓️</span>
                 </div>
                 <ul className="mt-2.5 space-y-1 text-sm">
-                  {m.players.map((p) => (
-                    <li key={p.name} className="flex justify-between gap-2">
+                  {m.players.map((p, i) => (
+                    <li key={`${p.name}-${i}`} className="flex justify-between gap-2">
                       <span className="truncate">
                         {p.name} <span className="text-xs text-slate-500">{p.position}</span>
                       </span>

@@ -207,12 +207,12 @@ export function weekAwards(l: League, week: number): Award[] {
 
 export type Inmate = {
   teamId: number;
-  players: { name: string; position: string; reason: "BYE" | "OUT" }[];
+  players: { name: string; position: string; reason: "BYE" | "OUT" | "EMPTY" }[];
   priors: number; // times the team was in jail in earlier weeks this season
 };
 
 /**
- * Teams that started someone who didn't play in a completed week.
+ * Teams that started someone who didn't play, or left a starting slot completely empty, in a completed week.
  * Skill players (QB/RB/WR/TE) count when they recorded no stats; K and D/ST only count on a bye,
  * since a kicker can legitimately have an empty stat line.
  */
@@ -234,6 +234,22 @@ export function jail(l: League): { week: number | null; inmates: Inmate[]; total
         ...(byTeam.get(e.team_id) ?? []),
         { name: p?.name ?? "Unknown", position: pos, reason: e.on_bye ? "BYE" : "OUT" },
       ]);
+    }
+    // Empty slots: a required starting slot with no player in it at all.
+    const REQUIRED: Record<number, [string, number]> = {
+      0: ["QB", 1], 2: ["RB", 2], 4: ["WR", 2], 6: ["TE", 1], 23: ["FLEX", 1], 16: ["D/ST", 1], 17: ["K", 1],
+    };
+    const teamsThatWeek = new Set(l.entries.filter((e) => e.week === w).map((e) => e.team_id));
+    for (const teamId of teamsThatWeek) {
+      const filled = new Map<number, number>();
+      for (const e of l.entries) {
+        if (e.week === w && e.team_id === teamId && e.is_starter) filled.set(e.slot_id, (filled.get(e.slot_id) ?? 0) + 1);
+      }
+      for (const [slot, [label, need]] of Object.entries(REQUIRED)) {
+        for (let i = filled.get(Number(slot)) ?? 0; i < need; i++) {
+          byTeam.set(teamId, [...(byTeam.get(teamId) ?? []), { name: `Empty ${label} slot`, position: label, reason: "EMPTY" }]);
+        }
+      }
     }
     return byTeam;
   };
