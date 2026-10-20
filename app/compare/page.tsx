@@ -12,6 +12,7 @@ const ROWS: { label: string; get: (t: TeamStats) => number; fmt: (n: number) => 
   { label: "Consistency", get: (t) => t.ratings.con, fmt: (n) => String(n) },
   { label: "Wins", get: (t) => t.wins + t.ties / 2, fmt: (n) => String(n) },
   { label: "Points per game", get: (t) => (t.weekly.length ? t.pf / t.weekly.length : 0), fmt: f1 },
+  { label: "Points allowed / game", get: (t) => (t.weekly.length ? t.pa / t.weekly.length : 0), fmt: f1, low: true },
   { label: "Points left on bench", get: (t) => t.bestPts - t.actualPts, fmt: f1, low: true },
 ];
 
@@ -24,6 +25,17 @@ export default async function Compare({ searchParams }: { searchParams: Promise<
   const A = a ? stats.get(Number(a)) : undefined;
   const B = b ? stats.get(Number(b)) : undefined;
   const ready = A && B && A.id !== B.id;
+
+  // Replay every completed week as if the two teams had played each other.
+  const replay = ready
+    ? A.weekly.flatMap((wa) => {
+        const wb = B.weekly.find((x) => x.week === wa.week);
+        return wb ? [{ week: wa.week, a: wa.score, b: wb.score }] : [];
+      })
+    : [];
+  const replayA = replay.filter((r) => r.a > r.b).length;
+  const replayB = replay.filter((r) => r.b > r.a).length;
+  const replayTies = replay.length - replayA - replayB;
 
   const meetings = ready
     ? l.matchups.filter((m) => (m.home_team === A.id && m.away_team === B.id) || (m.home_team === B.id && m.away_team === A.id))
@@ -89,6 +101,40 @@ export default async function Compare({ searchParams }: { searchParams: Promise<
               );
             })}
           </div>
+
+          <SectionTitle hint="every week replayed as if they faced each other">🔁 If they played every week</SectionTitle>
+          {replay.length === 0 ? (
+            <p className="text-sm text-slate-400">No completed weeks to replay yet.</p>
+          ) : (
+            <>
+              <div className="card mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 p-4 text-center">
+                <div>
+                  <div className="font-display text-3xl text-lime">{replayA}</div>
+                  <div className="truncate text-xs text-slate-400">{teamName(l, A.id)}</div>
+                </div>
+                <div className="text-xs uppercase tracking-wider text-slate-500">
+                  simulated wins{replayTies ? ` · ${replayTies} tie${replayTies > 1 ? "s" : ""}` : ""}
+                </div>
+                <div>
+                  <div className="font-display text-3xl text-lime">{replayB}</div>
+                  <div className="truncate text-xs text-slate-400">{teamName(l, B.id)}</div>
+                </div>
+              </div>
+              <div className="card divide-y divide-line/40">
+                {replay.map((r) => {
+                  const diff = Math.abs(r.a - r.b);
+                  return (
+                    <div key={r.week} className="grid grid-cols-[2.5rem_1fr_auto_1fr] items-center gap-2 px-4 py-2.5 text-sm">
+                      <span className="text-slate-500">Wk {r.week}</span>
+                      <span className={`font-display tabular-nums ${r.a > r.b ? "text-lime" : "text-slate-400"}`}>{f1(r.a)}{r.a > r.b ? " 👑" : ""}</span>
+                      <span className="text-center text-[11px] text-slate-500">{r.a === r.b ? "tie" : `by ${f1(diff)}`}</span>
+                      <span className={`text-right font-display tabular-nums ${r.b > r.a ? "text-lime" : "text-slate-400"}`}>{r.b > r.a ? "👑 " : ""}{f1(r.b)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           <SectionTitle>Head to head this season</SectionTitle>
           {meetings.length === 0 ? (

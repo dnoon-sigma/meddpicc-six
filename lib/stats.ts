@@ -158,6 +158,7 @@ export function computeTeamStats(l: League): Map<number, TeamStats> {
   };
   give((t) => t.wins + t.ties / 2 - t.losses, "max", { icon: "👑", label: "Top Dog", blurb: "Best record in the league" });
   give((t) => t.pf, "max", { icon: "🚀", label: "Points Machine", blurb: "Most points scored" });
+  give((t) => t.pa, "min", { icon: "🛡️", label: "Brick Wall", blurb: "Fewest points allowed" });
   give((t) => t.luck, "max", { icon: "🍀", label: "Four-Leaf Clover", blurb: "Luckiest team: more wins than the scoring deserves" });
   give((t) => t.luck, "min", { icon: "🌧️", label: "Cursed", blurb: "Unluckiest team: fewer wins than the scoring deserves" });
   give((t) => t.efficiency, "max", { icon: "🎯", label: "Lineup Genius", blurb: "Most efficient lineup setting" });
