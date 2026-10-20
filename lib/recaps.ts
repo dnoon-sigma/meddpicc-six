@@ -21,7 +21,8 @@ export function excerpt(body: string, max = 160): string {
   const text = body
     .replace(/^#{1,3}\s+/gm, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/[*_`>-]/g, "")
+    .replace(/^\s*([-*•>]|\d+[.)])\s+/gm, "")
+    .replace(/[*`]/g, "")
     .replace(/\s+/g, " ")
     .trim();
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
