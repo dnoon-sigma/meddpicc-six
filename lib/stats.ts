@@ -40,7 +40,7 @@ export function weeklyEfficiency(l: League): WeekEff[] {
 }
 
 export type Badge = { icon: string; label: string; blurb: string };
-export type Ratings = { atk: number; def: number; luck: number; eff: number; con: number; ovr: number };
+export type Ratings = { atk: number; luck: number; eff: number; con: number; ovr: number };
 export type TeamStats = {
   id: number;
   wins: number;
@@ -78,7 +78,7 @@ export function computeTeamStats(l: League): Map<number, TeamStats> {
       out.set(id, {
         id, wins: 0, losses: 0, ties: 0, pf: 0, pa: 0, weekly: [], expected: 0, luck: 0,
         actualPts: 0, bestPts: 0, efficiency: 0, stdev: 0, streak: { type: null, n: 0 },
-        ratings: { atk: 75, def: 75, luck: 75, eff: 75, con: 75, ovr: 75 }, badges: [],
+        ratings: { atk: 75, luck: 75, eff: 75, con: 75, ovr: 75 }, badges: [],
       });
     }
     return out.get(id)!;
@@ -136,13 +136,12 @@ export function computeTeamStats(l: League): Map<number, TeamStats> {
     };
   };
   const rAtk = scale((t) => t.pf / t.weekly.length);
-  const rDef = scale((t) => t.pa / t.weekly.length, true);
   const rLuck = scale((t) => t.luck);
   const rEff = scale((t) => t.efficiency);
   const rCon = scale((t) => t.stdev, true);
   for (const t of out.values()) {
-    const r = { atk: rAtk(t), def: rDef(t), luck: rLuck(t), eff: rEff(t), con: rCon(t) };
-    t.ratings = { ...r, ovr: Math.round(mean([r.atk, r.atk, r.def, r.eff, r.con])) };
+    const r = { atk: rAtk(t), luck: rLuck(t), eff: rEff(t), con: rCon(t) };
+    t.ratings = { ...r, ovr: Math.round(mean([r.atk, r.atk, r.eff, r.con])) };
   }
 
   // Badges: each goes to exactly one team.
@@ -159,7 +158,6 @@ export function computeTeamStats(l: League): Map<number, TeamStats> {
   };
   give((t) => t.wins + t.ties / 2 - t.losses, "max", { icon: "👑", label: "Top Dog", blurb: "Best record in the league" });
   give((t) => t.pf, "max", { icon: "🚀", label: "Points Machine", blurb: "Most points scored" });
-  give((t) => t.pa, "min", { icon: "🛡️", label: "Brick Wall", blurb: "Fewest points allowed" });
   give((t) => t.luck, "max", { icon: "🍀", label: "Four-Leaf Clover", blurb: "Luckiest team: more wins than the scoring deserves" });
   give((t) => t.luck, "min", { icon: "🌧️", label: "Cursed", blurb: "Unluckiest team: fewer wins than the scoring deserves" });
   give((t) => t.efficiency, "max", { icon: "🎯", label: "Lineup Genius", blurb: "Most efficient lineup setting" });

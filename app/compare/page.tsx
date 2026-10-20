@@ -7,13 +7,11 @@ export const revalidate = 300;
 
 const ROWS: { label: string; get: (t: TeamStats) => number; fmt: (n: number) => string; low?: boolean }[] = [
   { label: "Attack", get: (t) => t.ratings.atk, fmt: (n) => String(n) },
-  { label: "Defense", get: (t) => t.ratings.def, fmt: (n) => String(n) },
   { label: "Luck", get: (t) => t.ratings.luck, fmt: (n) => String(n) },
   { label: "Efficiency", get: (t) => t.ratings.eff, fmt: (n) => String(n) },
   { label: "Consistency", get: (t) => t.ratings.con, fmt: (n) => String(n) },
   { label: "Wins", get: (t) => t.wins + t.ties / 2, fmt: (n) => String(n) },
   { label: "Points per game", get: (t) => (t.weekly.length ? t.pf / t.weekly.length : 0), fmt: f1 },
-  { label: "Points allowed / game", get: (t) => (t.weekly.length ? t.pa / t.weekly.length : 0), fmt: f1, low: true },
   { label: "Points left on bench", get: (t) => t.bestPts - t.actualPts, fmt: f1, low: true },
 ];
 

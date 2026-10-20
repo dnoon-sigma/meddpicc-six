@@ -39,7 +39,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
         <div className="mt-5">
           <RatingBars r={t.ratings} />
           <p className="mt-3 text-[11px] text-slate-500">
-            ATK scoring · DEF points allowed · LCK luck · EFF lineup efficiency · CON consistency. All rated against the league (50–99).
+            ATK scoring · LCK luck · EFF lineup efficiency · CON consistency. All rated against the league (50–99).
           </p>
         </div>
       </div>

@@ -69,14 +69,13 @@ export function StatBar({ label, value, color = "bg-cyan", delay = 0 }: { label:
   );
 }
 
-export function RatingBars({ r }: { r: { atk: number; def: number; luck: number; eff: number; con: number } }) {
+export function RatingBars({ r }: { r: { atk: number; luck: number; eff: number; con: number } }) {
   return (
     <div className="space-y-2">
       <StatBar label="ATK" value={r.atk} color="bg-pink" />
-      <StatBar label="DEF" value={r.def} color="bg-cyan" delay={80} />
-      <StatBar label="LCK" value={r.luck} color="bg-lime" delay={160} />
-      <StatBar label="EFF" value={r.eff} color="bg-amber" delay={240} />
-      <StatBar label="CON" value={r.con} color="bg-violet-400" delay={320} />
+      <StatBar label="LCK" value={r.luck} color="bg-lime" delay={80} />
+      <StatBar label="EFF" value={r.eff} color="bg-amber" delay={160} />
+      <StatBar label="CON" value={r.con} color="bg-violet-400" delay={240} />
     </div>
   );
 }
