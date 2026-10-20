@@ -3,7 +3,7 @@ import { loadLeague, standings, teamName } from "@/lib/league";
 import { computeTeamStats, weekAwards } from "@/lib/stats";
 import { REPORTS } from "@/lib/reports";
 import { SectionTitle, Title } from "@/components/ui";
-import { StandingsList } from "@/components/StandingsList";
+import { Flips } from "@/components/Flips";
 import { Jail } from "@/components/Jail";
 import { excerpt, loadRecaps } from "@/lib/recaps";
 import { Empty } from "@/components/DataTable";
@@ -26,6 +26,9 @@ export default async function Home() {
       <Title sub={`Through week ${throughWeek} · tap anything to dig in`}>MEDDPICC 6</Title>
       <div className="mb-2 flex flex-wrap gap-3">
         <SurpriseButton hrefs={surprise} />
+        <Link href="/standings" className="rounded-full border border-line px-5 py-2.5 font-display text-sm tracking-wide hover:border-cyan">
+          📊 Standings
+        </Link>
         <Link href="/live" className="rounded-full border border-line px-5 py-2.5 font-display text-sm tracking-wide hover:border-cyan">
           📡 Live board
         </Link>
@@ -60,27 +63,9 @@ export default async function Home() {
         })}
       </div>
 
-      <Jail l={l} />
+      <Flips l={l} />
 
-      <SectionTitle hint="sort it however you like · tap a team for its profile">📊 Standings</SectionTitle>
-      <StandingsList
-        rows={rows.map((s) => {
-          const t = stats.get(s.id)!;
-          return {
-            id: s.id,
-            name: teamName(l, s.id),
-            owner: l.teams.get(s.id)?.owner ?? null,
-            wins: s.wins,
-            losses: s.losses,
-            ties: s.ties,
-            pf: s.pf,
-            pa: s.pa,
-            ovr: t.ratings.ovr,
-            streakType: t.streak.type,
-            streakN: t.streak.n,
-          };
-        })}
-      />
+      <Jail l={l} />
 
       <SectionTitle hint="who holds each title right now">🏆 Trophy case</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

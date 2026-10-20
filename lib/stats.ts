@@ -3,22 +3,36 @@ import { League, Entry, teamName } from "./league";
 // Starting requirements: QB, 2 RB, 2 WR, TE, FLEX (RB/WR/TE), D/ST, K.
 const NEEDS: Record<string, number> = { QB: 1, RB: 2, WR: 2, TE: 1, "D/ST": 1, K: 1 };
 
-export function optimalScore(l: League, roster: Entry[]): number {
-  const byPos = new Map<string, number[]>();
+/** Best possible lineup from a week's roster: total points and the players it would have started. */
+export function optimalLineup(l: League, roster: Entry[]): { total: number; ids: Set<number> } {
+  const byPos = new Map<string, { id: number; points: number }[]>();
   for (const e of roster) {
     if (e.slot_id === 21) continue; // IR players can't be started
     const pos = l.players.get(e.player_id)?.position;
     if (!pos) continue;
-    byPos.set(pos, [...(byPos.get(pos) ?? []), e.points]);
+    byPos.set(pos, [...(byPos.get(pos) ?? []), { id: e.player_id, points: e.points }]);
   }
+  const ids = new Set<number>();
   let total = 0;
-  const flexPool: number[] = [];
+  const flexPool: { id: number; points: number }[] = [];
   for (const [pos, need] of Object.entries(NEEDS)) {
-    const sorted = (byPos.get(pos) ?? []).sort((a, b) => b - a);
-    total += sorted.slice(0, need).reduce((a, b) => a + b, 0);
+    const sorted = (byPos.get(pos) ?? []).sort((a, b) => b.points - a.points);
+    for (const p of sorted.slice(0, need)) {
+      ids.add(p.id);
+      total += p.points;
+    }
     if (pos === "RB" || pos === "WR" || pos === "TE") flexPool.push(...sorted.slice(need));
   }
-  return total + (flexPool.sort((a, b) => b - a)[0] ?? 0);
+  const flex = flexPool.sort((a, b) => b.points - a.points)[0];
+  if (flex) {
+    ids.add(flex.id);
+    total += flex.points;
+  }
+  return { total, ids };
+}
+
+export function optimalScore(l: League, roster: Entry[]): number {
+  return optimalLineup(l, roster).total;
 }
 
 export type WeekEff = { week: number; team: number; actual: number; best: number };
@@ -261,4 +275,54 @@ export function jail(l: League): { week: number | null; inmates: Inmate[]; total
   const inmates = [...offenders(week)].map(([teamId, players]) => ({ teamId, players, priors: priors.get(teamId) ?? 0 }));
   inmates.sort((a, b) => b.players.length - a.players.length || b.priors - a.priors);
   return { week, inmates, totalPriors: [...priors.values()].reduce((a, b) => a + b, 0) };
+}
+
+export type Flip = {
+  week: number;
+  loser: number;
+  winner: number;
+  loserScore: number;
+  winnerScore: number;
+  best: number; // loser's best possible lineup score
+  missed: { name: string; position: string; points: number }[]; // bench players the best lineup would have started
+  priors: number; // earlier completed weeks this season where this team also lost to its own lineup
+};
+
+/** Games a team lost although its best possible lineup would have beaten the opponent's actual score. */
+export function lineupFlips(l: League): { week: number | null; flips: Flip[] } {
+  const finalWeeks = [...new Set(l.matchups.filter((m) => m.final).map((m) => m.week))].sort((a, b) => a - b);
+  const week = finalWeeks[finalWeeks.length - 1] ?? null;
+  if (week === null) return { week, flips: [] };
+
+  const rosters = new Map<string, Entry[]>();
+  for (const e of l.entries) {
+    const k = `${e.week}:${e.team_id}`;
+    rosters.set(k, [...(rosters.get(k) ?? []), e]);
+  }
+
+  const flipsIn = (w: number): Flip[] => {
+    const out: Flip[] = [];
+    for (const m of l.matchups.filter((x) => x.week === w && x.final && x.winner !== "TIE")) {
+      const homeWon = m.winner === "HOME";
+      const loser = homeWon ? m.away_team : m.home_team;
+      const winner = homeWon ? m.home_team : m.away_team;
+      const loserScore = homeWon ? m.away_score : m.home_score;
+      const winnerScore = homeWon ? m.home_score : m.away_score;
+      const roster = rosters.get(`${w}:${loser}`) ?? [];
+      const opt = optimalLineup(l, roster);
+      if (opt.total <= winnerScore) continue;
+      const missed = roster
+        .filter((e) => opt.ids.has(e.player_id) && !e.is_starter)
+        .sort((a, b) => b.points - a.points)
+        .map((e) => ({ name: l.players.get(e.player_id)?.name ?? "Unknown", position: l.players.get(e.player_id)?.position ?? "", points: e.points }));
+      out.push({ week: w, loser, winner, loserScore, winnerScore, best: opt.total, missed, priors: 0 });
+    }
+    return out;
+  };
+
+  const priors = new Map<number, number>();
+  for (const w of finalWeeks.filter((x) => x < week)) for (const f of flipsIn(w)) priors.set(f.loser, (priors.get(f.loser) ?? 0) + 1);
+  const flips = flipsIn(week).map((f) => ({ ...f, priors: priors.get(f.loser) ?? 0 }));
+  flips.sort((a, b) => b.best - b.winnerScore - (a.best - a.winnerScore));
+  return { week, flips };
 }
