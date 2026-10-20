@@ -5,13 +5,15 @@ import { REPORTS } from "@/lib/reports";
 import { SectionTitle, Title } from "@/components/ui";
 import { StandingsList } from "@/components/StandingsList";
 import { Jail } from "@/components/Jail";
+import { excerpt, loadRecaps } from "@/lib/recaps";
 import { Empty } from "@/components/DataTable";
 import { SurpriseButton } from "@/components/SurpriseButton";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const l = await loadLeague();
+  const [l, recaps] = await Promise.all([loadLeague(), loadRecaps()]);
+  const latestRecap = recaps[0];
   const { throughWeek, rows } = standings(l);
   if (throughWeek === 0) return <Empty />;
   const stats = computeTeamStats(l);
@@ -28,6 +30,15 @@ export default async function Home() {
           📡 Live board
         </Link>
       </div>
+
+      {latestRecap && (
+        <Link href={`/recaps/${latestRecap.week}`} className="card pop mt-6 block p-5">
+          <div className="font-display text-xs tracking-wider text-amber">📝 LATEST RECAP · WEEK {latestRecap.week}</div>
+          <div className="mt-1 font-display text-lg leading-tight">{latestRecap.title || `Week ${latestRecap.week} recap`}</div>
+          <p className="mt-2 text-sm text-slate-400">{excerpt(latestRecap.body, 140)}</p>
+          <div className="mt-2 text-xs font-semibold text-cyan">Read it →</div>
+        </Link>
+      )}
 
       <SectionTitle hint={`week ${throughWeek}`}>🏅 Weekly awards</SectionTitle>
       <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
