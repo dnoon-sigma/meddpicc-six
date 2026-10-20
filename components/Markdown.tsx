@@ -22,7 +22,7 @@ function inline(text: string): ReactNode[] {
   return out;
 }
 
-/** Small markdown subset: headings (#, ##, ###), bullet lists, paragraphs (blank-line separated), line breaks. */
+/** Small markdown subset: headings (#, ##, ###), bullet and numbered lists, paragraphs (blank-line separated), line breaks. */
 export function Markdown({ source }: { source: string }) {
   const blocks = source.replace(/\r\n/g, "\n").trim().split(/\n{2,}/);
   return (
@@ -33,6 +33,13 @@ export function Markdown({ source }: { source: string }) {
         if (heading && lines.length === 1) {
           const size = heading[1].length === 1 ? "text-2xl" : heading[1].length === 2 ? "text-xl" : "text-lg";
           return <h3 key={i} className={`mt-6 font-display ${size} text-cyan`}>{inline(heading[2])}</h3>;
+        }
+        if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) {
+          return (
+            <ol key={i} className="list-decimal space-y-1 pl-6 marker:text-slate-500">
+              {lines.map((l, j) => <li key={j}>{inline(l.replace(/^\s*\d+[.)]\s+/, ""))}</li>)}
+            </ol>
+          );
         }
         if (lines.every((l) => /^\s*[-*•]\s+/.test(l))) {
           return (
