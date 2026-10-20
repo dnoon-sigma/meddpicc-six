@@ -27,6 +27,7 @@ export type League = {
   matchups: Matchup[];
   entries: Entry[];
   lastSync: string | null;
+  lastLive: string | null;
 };
 
 async function fetchAll<T>(table: string, columns: string, seasonFiltered = true): Promise<T[]> {
@@ -60,12 +61,20 @@ export async function loadLeague(): Promise<League> {
     .eq("status", "ok")
     .order("created_at", { ascending: false })
     .limit(1);
+  const { data: live } = await publicClient()
+    .from("sync_runs")
+    .select("created_at")
+    .in("kind", ["live", "live-tail"])
+    .eq("status", "ok")
+    .order("created_at", { ascending: false })
+    .limit(1);
   return {
     teams: new Map(teams.map((t) => [t.id, t])),
     players: new Map(players.map((p) => [p.id, p])),
     matchups: matchups.map((m) => ({ ...m, home_score: num(m.home_score), away_score: num(m.away_score) })),
     entries: entries.map((e) => ({ ...e, points: num(e.points), projected: e.projected == null ? null : num(e.projected) })),
     lastSync: run?.[0]?.created_at ?? null,
+    lastLive: live?.[0]?.created_at ?? null,
   };
 }
 

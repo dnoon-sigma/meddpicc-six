@@ -106,9 +106,49 @@ export async function runSync(mode: "backfill" | "current") {
   try {
     for (const w of weeks) results.push(await syncWeek(w));
     await logRun(mode, now, "ok", `synced weeks ${weeks.join(", ")}`);
+    await pruneLiveRuns();
     return results;
   } catch (err) {
     await logRun(mode, now, "error", String(err));
     throw err;
   }
+}
+
+const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+
+async function nflGameLive(): Promise<boolean> {
+  const res = await fetch(SCOREBOARD, { cache: "no-store" });
+  if (!res.ok) throw new Error(`ESPN scoreboard ${res.status}`);
+  const data = await res.json();
+  return (data.events ?? []).some((e: any) => e.status?.type?.state === "in");
+}
+
+/**
+ * Called every 5 minutes by Supabase. Syncs the current week only while an NFL game is in progress,
+ * plus one 30-minute tail after the last live sync to catch the final stat updates. Otherwise a no-op.
+ */
+export async function runLive(force = false) {
+  let kind = "live";
+  if (!force && !(await nflGameLive())) {
+    const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data } = await serviceClient()
+      .from("sync_runs").select("id").eq("kind", "live").eq("status", "ok").gte("created_at", since).limit(1);
+    if (!data?.length) return { skipped: true };
+    kind = "live-tail";
+  }
+  const week = await currentWeek();
+  try {
+    const result = await syncWeek(week);
+    await logRun(kind, week, "ok", `synced week ${week}`);
+    return { skipped: false, kind, ...result };
+  } catch (err) {
+    await logRun(kind, week, "error", String(err));
+    throw err;
+  }
+}
+
+/** Live runs are only useful for a few days; keep the log small. */
+export async function pruneLiveRuns() {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  await serviceClient().from("sync_runs").delete().in("kind", ["live", "live-tail"]).lt("created_at", cutoff);
 }

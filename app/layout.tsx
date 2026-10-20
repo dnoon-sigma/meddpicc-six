@@ -5,6 +5,7 @@ export const metadata = { title: "Fantasy League", description: "Stats and curio
 
 const NAV = [
   { href: "/", label: "Standings" },
+  { href: "/live", label: "Live" },
   { href: "/weeks", label: "Weeks" },
   { href: "/reports", label: "Reports" },
 ];
