@@ -2,7 +2,8 @@ import Link from "next/link";
 import { loadLeague, standings, teamName } from "@/lib/league";
 import { computeTeamStats, weekAwards } from "@/lib/stats";
 import { REPORTS } from "@/lib/reports";
-import { Avatar, Medal, Ovr, SectionTitle, StreakBadge, Title } from "@/components/ui";
+import { SectionTitle, Title } from "@/components/ui";
+import { StandingsList } from "@/components/StandingsList";
 import { Empty } from "@/components/DataTable";
 import { SurpriseButton } from "@/components/SurpriseButton";
 
@@ -14,7 +15,6 @@ export default async function Home() {
   if (throughWeek === 0) return <Empty />;
   const stats = computeTeamStats(l);
   const awards = weekAwards(l, throughWeek);
-  const maxPf = Math.max(...rows.map((r) => r.pf));
   const holders = [...stats.values()].flatMap((t) => t.badges.map((b) => ({ ...b, team: t.id })));
   const surprise = [...REPORTS.map((r) => `/reports/${r.slug}`), ...rows.map((r) => `/teams/${r.id}`)];
 
@@ -48,37 +48,25 @@ export default async function Home() {
         })}
       </div>
 
-      <SectionTitle hint="tap a team for its profile">📊 Standings</SectionTitle>
-      <div className="space-y-2.5">
-        {rows.map((s, i) => {
+      <SectionTitle hint="sort it however you like · tap a team for its profile">📊 Standings</SectionTitle>
+      <StandingsList
+        rows={rows.map((s) => {
           const t = stats.get(s.id)!;
-          const name = teamName(l, s.id);
-          return (
-            <Link key={s.id} href={`/teams/${s.id}`} className="card pop flex items-center gap-3 p-3" style={{ animationDelay: `${i * 35}ms` }}>
-              <Medal rank={i + 1} />
-              <Avatar id={s.id} name={name} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-semibold">{name}</span>
-                  <StreakBadge type={t.streak.type} n={t.streak.n} />
-                </div>
-                <div className="truncate text-xs text-slate-500">{l.teams.get(s.id)?.owner}</div>
-                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-black/40">
-                  <div className="fill h-full rounded-full bg-gradient-to-r from-pink to-amber" style={{ width: `${(s.pf / maxPf) * 100}%` }} />
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-display text-lg tabular-nums">
-                  {s.wins}-{s.losses}
-                  {s.ties ? `-${s.ties}` : ""}
-                </div>
-                <div className="text-[11px] text-slate-500 tabular-nums">{s.pf.toFixed(0)} PF</div>
-              </div>
-              <Ovr value={t.ratings.ovr} />
-            </Link>
-          );
+          return {
+            id: s.id,
+            name: teamName(l, s.id),
+            owner: l.teams.get(s.id)?.owner ?? null,
+            wins: s.wins,
+            losses: s.losses,
+            ties: s.ties,
+            pf: s.pf,
+            pa: s.pa,
+            ovr: t.ratings.ovr,
+            streakType: t.streak.type,
+            streakN: t.streak.n,
+          };
         })}
-      </div>
+      />
 
       <SectionTitle hint="who holds each title right now">🏆 Trophy case</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
